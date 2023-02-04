@@ -1,0 +1,312 @@
+---
+title: "A Spatial look at Toronto Apartment Typology and Grounds"
+author: Finn Korol
+date: 3 February, 2022
+date-format: long
+format:
+  pdf: 
+    documentclass: article 
+    geometry: margin = 1in
+    abstract: lorem ipsum dolor
+toc: true
+toc-depth: 4
+theme: cosmo
+bibliography: bibliography.bib
+
+---
+
+^[Code and data supporting this analysis is available at: https://github.com/korolodf/Toronto_Apartments]
+
+# 1 Introduction
+This work was done using @R. 
+
+# 2 Data
+
+## 2.1 Acquisition
+
+## 2.2 Features
+
+## 2.3 Analysis
+
+```{r, tidy = TRUE, tidy.opts=list(width.cutoff=60), message=FALSE, echo=FALSE}
+
+
+library(readr)
+library(here)
+ 
+library(dplyr)
+library(tidyr)
+library(janitor)
+library(tinytex)
+ 
+library(ggmap)
+
+library(opendatatoronto)
+library(dplyr)
+
+library(data.table)
+library(psych)
+library(formattable)
+
+library(gridtext)
+library(gridExtra)
+
+clean_df <- read_csv("data/clean_df.csv")
+
+clean_df <- clean_df %>% relocate(longitude, .after = walkways)
+clean_df <- clean_df %>% relocate(latitude, .after = longitude)
+
+head_table <- knitr::kable(head(clean_df))
+head_table
+
+```
+# 3 Results
+
+```{r, tidy = TRUE, tidy.opts=list(width.cutoff=60), message=FALSE, echo=FALSE, results='hide'}
+
+round(colMeans(clean_df), 1)
+
+stats_table <- describe(clean_df) 
+
+keeps <- c("mean","sd")
+stats_table <- data.frame(t(round(stats_table[keeps], 1)))
+```
+
+
+
+```{r, tidy = TRUE, tidy.opts=list(width.cutoff=60), message=FALSE, echo=FALSE}
+knitr::kable(stats_table)
+
+            
+```
+
+```{r, tidy = TRUE, tidy.opts=list(width.cutoff=60), message=FALSE, echo=FALSE}
+
+#graphing on the map 
+bbox <- c(left = -79.65, bottom = 43.55, right = -79.1, top = 43.85)
+toronto_map <- get_stamenmap(bbox, 
+                             zoom = 10, 
+                             maptype = "terrain")
+# Map tiles by Stamen Design, under CC BY 3.0. Data by OpenStreetMap, under ODbL.
+
+ggmap(toronto_map)
+ggmap(
+  toronto_map,
+  extent = "normal",
+  maprange = FALSE) +
+  geom_point(
+    data = clean_df,
+    aes(
+      x = longitude,
+      y = latitude,
+      colour = storeys
+    ),
+    size = 1,
+    alpha = 0.5
+  ) +
+  scale_colour_gradientn(colours=rainbow(4)) +
+  labs(
+    x = "Longitude",
+    y = "Latitude",
+    colour = "Height (storeys)"
+  ) +
+  theme_minimal() +
+  theme(
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(),
+  ) 
+
+ggmap(
+  toronto_map,
+  extent = "normal",
+  maprange = FALSE) +
+  geom_point(
+    data = clean_df,
+    aes(
+      x = longitude,
+      y = latitude,
+      colour = age
+    ),
+    size = 1,
+    alpha = 0.5
+  ) +
+  scale_colour_gradientn(colours=rainbow(4)) +
+  labs(
+    x = "Longitude",
+    y = "Latitude",
+    colour = "Age (years)"
+  ) +
+  theme_minimal() +
+  theme(
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(),
+  ) 
+
+
+```
+
+
+
+```{r, tidy = TRUE, tidy.opts=list(width.cutoff=60), message=FALSE, echo=FALSE}
+p1 <- ggmap(
+  toronto_map,
+  extent = "normal",
+  maprange = FALSE) +
+  geom_point(
+    data = clean_df,
+    aes(
+      x = longitude,
+      y = latitude,
+      colour = walkways
+    ),
+    size = 1,
+    alpha = 0.5
+  ) +
+  scale_colour_gradientn(colours=rainbow(4)) +
+    labs(
+      x = NULL,
+      y = NULL,
+      colour = "Walkways"
+    ) +  
+  theme_minimal() +
+  theme(
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(),
+    axis.text.x = element_blank(),
+    axis.ticks = element_blank(),
+    rect = element_blank()
+  ) 
+
+p2 <- ggmap(
+  toronto_map,
+  extent = "normal",
+  maprange = FALSE) +
+  geom_point(
+    data = clean_df,
+    aes(
+      x = longitude,
+      y = latitude,
+      colour = graffiti
+    ),
+    size = 1,
+    alpha = 0.5
+  ) +
+  scale_colour_gradientn(colours=rainbow(4)) +
+    labs(
+      x = NULL,
+      y = NULL,
+      colour = "Graffiti     "
+    ) +
+  theme_minimal() +
+  theme(
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(),
+    axis.text.x = element_blank(),
+    axis.text.y = element_blank(),
+    axis.ticks = element_blank(),
+    rect = element_blank()
+  ) 
+
+p3 <- ggmap(
+  toronto_map,
+  extent = "normal",
+  maprange = FALSE) +
+  geom_point(
+    data = clean_df,
+    aes(
+      x = longitude,
+      y = latitude,
+      colour = cladding
+    ),
+    size = 1,
+    alpha = 0.5
+  ) +
+  scale_colour_gradientn(colours=rainbow(4)) +
+    labs(
+      x = NULL,
+      y = NULL,
+      colour = "Cladding"
+    ) +
+  theme_minimal() +
+  theme(
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(),
+  ) 
+
+p4 <- ggmap(
+  toronto_map,
+  extent = "normal",
+  maprange = FALSE) +
+  geom_point(
+    data = clean_df,
+    aes(
+      x = longitude,
+      y = latitude,
+      colour = grounds
+    ),
+    size = 1,
+    alpha = 0.5
+  ) +
+  scale_colour_gradientn(colours=rainbow(4)) +
+    labs(
+      x = NULL,
+      y = NULL,
+      colour = "Grounds "
+    ) +
+  theme_minimal() +
+  theme(
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(),
+    axis.text.y = element_blank(),
+    axis.ticks = element_blank(),
+    rect = element_blank()
+  ) 
+
+p = list(p1,p2,p3,p4)
+
+yleft = richtext_grob('<span style="color:red">Latitude</span>', rot=90)
+bottom = richtext_grob(
+  text = '<span style="color:red">Longitude</span>')
+  
+grid.arrange(grobs=p, ncol = 2, nrow = 2, left = yleft, bottom = bottom)
+
+```
+
+```{r, tidy = TRUE, tidy.opts=list(width.cutoff=60), message=FALSE, echo=FALSE}
+graffiti_age <- clean_df %>% group_by(age) %>% 
+     summarise(mean_graffiti=mean(graffiti),
+               .groups = 'drop')
+
+cladding_age <- clean_df %>% group_by(age) %>% 
+     summarise(mean_cladding=mean(cladding),
+               .groups = 'drop')
+
+grounds_age <- clean_df %>% group_by(age) %>% 
+     summarise(mean_grounds=mean(grounds),
+               .groups = 'drop')
+
+walkways_age <- clean_df %>% group_by(age) %>% 
+     summarise(mean_walkways=mean(walkways),
+               .groups = 'drop')
+
+age <- graffiti_age$age
+
+#plot the first data series using plot()
+plot(age, graffiti_age$mean_graffiti, col="blue", pch="o", ylab="subscore", lty=1, ylim=c(1.5,5))
+lines(age, graffiti_age$mean_graffiti, col="blue",  lty=1)
+
+#add second data series to the same chart using points() and lines()
+points(age, cladding_age$mean_cladding, col="red", pch="*")
+lines(age, cladding_age$mean_cladding, col="red",  lty=2)
+
+#add third data series to the same chart using points() and lines()
+points(age, grounds_age$mean_grounds, col="black", pch="+")
+lines(age, grounds_age$mean_grounds, col="black", pch="+", lty=3)
+
+#add fourth data series to the same chart using points() and lines()
+points(age, walkways_age$mean_walkways, col="dark green", pch="x")
+lines(age, walkways_age$mean_walkways, col="dark green", pch="x", lty=4)
+
+#add a legend in top left corner of chart at (x, y) coordinates = (150, 2.8)
+legend(150,2.8,legend=c("graffiti","cladding","grounds","walkways"), col=c("blue","red","black", "dark green"),lty=c(1,2,3,4), ncol=1)
+```
