@@ -1,153 +1,138 @@
 ---
-title: "A Spatial look at Toronto Apartment Typology and Grounds"
-author: Finn Korol
-date: 3 February, 2022
+title: "A Spatial look at Toronto Apartment Building External Maintenance"
+author: Finn Korol 
+thanks: "Code and data are available at: https://github.com/korolodf/Apartments_Toronto"
+date: 4 February, 2022
 date-format: long
 format:
   pdf: 
     documentclass: article 
     geometry: margin = 1in
-    abstract: lorem ipsum dolor
+    abstract: The city of Toronto, Ontario features an eclectic building landscape. This paper seeks to analyze the spacial distribution of exterior qualities of apartment buildings relating to upkeep as they have been evaluated by Toronto bylaw. Visualizing subscores for exterior qualities reveals that upkeep is evaluated to be the worst in the Southwest corner of the city, and best in the Northeast. A relationship might exist between these subscores and building age with middle-aged buildings receiving the lowest subscores. 
 toc: true
 toc-depth: 4
 theme: cosmo
 bibliography: bibliography.bib
-
 ---
 
-^[Code and data supporting this analysis is available at: https://github.com/korolodf/Toronto_Apartments]
+\newpage
 
 # 1 Introduction
-This work was done using @R. 
+Toronto architecture is difficult to describe outside of a “well, it’s there” sort of way. In other words, architecture critics and laymen alike typically are unimpressed by Toronto's cityscape [@hume_2005]. While rent in the city skyrockets, in part due to housing demand, it is interesting to look back. Toronto has responded to population booms by spitting out apartment buildings [@era_2018]. The effect is that dating apartment buildings offers a rough estimate for a time in the city’s history where the infrastructure was not meeting the needs of its residents. This slapdash approach to urban planning has contributed to a utilitarian building typology which is better appreciated for its eclecticism than for its beauty and innovative design  [@era_2018]. What becomes of the city built without a well thought-out plan? Is Toronto a "nice" looking city based upon how its buildings mature and are maintained?
+
+This small realization of Toronto’s approach to urban design, while not necessarily related to the features of apartment building data that this this paper seeks to explore, was motivational toward this exploration. As a case study of city featuring a utilitarian approach to residential urban design, I will explore data on evaluation of exterior conditions of apartment buildings. I aim to answer the question: How does the upkeep of apartment buildings vary spatially in Toronto? In addition, I will explore the distribution of ages of buildings in the city and plot upkeep against age to address a second question: have the exteriors of older buildings become more deteriorated? I utilize @opendatatoronto’s code to view qualities of apartments across the city and my analysis is conducted using @R. 
 
 # 2 Data
-
 ## 2.1 Acquisition
+The data used was provided by opendatatoronto, and was published by Municipal Licensing & Standards through RentSafeTO. Initial observations of the set begin in 2017 and have been completed through to the end of January, 2023. Data was loaded and saved using @dplyr and @readr, and directories were managed and called upon using @here. 
 
 ## 2.2 Features
+The data contains 11651 observations, beginning in 2017, with each row populated with the data collected upon an individual evaluation of an apartment building in Toronto. The buildings included are those under the jurisdictions of RentSafeTO, which are those either with greater than 3 storeys or 10 units. Evaluations are performed at least once every 3 years. A score out of 100 (included as a column in the set) was given to each building upon inspection, which was made up of subscores out of 5 (also included). The subscores represent evaluations of features including the building lobby, entrance door and windows, security system, stairwells, laundry rooms, handrails and guards, garbage chute rooms, garbage collection area, elevators, lockers and storage areas, walls and ceilings and floors, interior lighting levels, graffiti, exterior cladding, grounds, walkways, balcony guards, the external penetrative ability of water, parking area and unspecified other facilities. Other included data were the building RSN (an identification number), location specifiers (to be elaborated upon in 2.3), years built, registered and evaluated, the date of evaluation, the result of the evaluation (based upon the score, including audit and the length of time before next evaluation). 
 
-## 2.3 Analysis
+The original data set contained 40 column variables, which were reduced to 7 for relevance to this analysis. Many original data were redundant in this context, for example by including the apartment’s ward numerically and by name in addition to grid ID locations and in a separate x and y set of coordinates. For compatability reasons with the tools used in this analysis, longitude and latitude were ideal, and because they were included as well, the rest of the location specifiers were removed from the set. For relevance to this analysis, subscores were reduced to just those related to the exterior of the building, also removing those which were not applicable to all buildings (e.g. parking lot) in the interest of keeping the set as large as possible and avoiding selection bias (where buildings with parking lots might represent only the wealthiest in an area, for example). Total score was also removed. The remaining subscores were thus the building grounds, cladding, graffiti and walkways. 
 
-```{r, tidy = TRUE, tidy.opts=list(width.cutoff=60), message=FALSE, echo=FALSE}
+These evaluation data are riddled with potential for biases, which I attempted to be aware of in this analysis, and the reader should consider as well. One source of bias arises due to the bylaw officers, who are human and capable of subconsciously miss-scoring, serving as building inspectors in the collection of this data. Examples of this might include judgement passed on buildings based upon their age or location in the city. This might present as an inspector assuming a building’s condition will be inferior and carrying that assumption through their evaluation by nitpicking more relative to other buildings. Alternatively, inspectors might overscore a building that they believe is in better condition than would be expected of its age or location. Inspectors might also score more strictly upon a building that has failed past inspections, or might produce poor evaluation scores to an uncooperative landlord. My hypothetical examples are speculative and not meant to be accusatory of RentSafeTO. My identification of potential biases in the dataset is not exhaustive. 
+
+## 2.3 Cleaning
+Before removal from the set, building RSN was used to prevent single buildings from representing multiple observations. It was observed that buildings were evaluated often 3 times, so only the latest observation of a building was kept to keep this analysis as current as possible. The remaining variables, all being numbers were converted to numerical types, and null values were removed. The year each building was built was also converted to an age for a more intuitive representation of a possible relationship with subscores. Unit tests were run to ensure that all score and subscore values fell within their intended bounds. The resultant clean data frame was reduced to 3333 observations. After cleaning, the earliest evaluation was completed in September, 2017 and the latest was January, 2023. The first 5 rows of the cleaned data frame are shown below in @tbl-table1. Data was cleaned using @tidyr and @janitor, with help from @dplyr for simplifying syntax and providing shortcuts. 
 
 
-library(readr)
-library(here)
+```{r, tidy = TRUE, message=FALSE, echo=FALSE}
+#package imports
+
+library(readr) #done
+library(here) #done
  
-library(dplyr)
-library(tidyr)
-library(janitor)
-library(tinytex)
+library(dplyr) #done
+library(tidyr) #done
+
+library(janitor) #done
  
-library(ggmap)
+library(ggmap) #done
 
-library(opendatatoronto)
-library(dplyr)
+library(opendatatoronto) #done
 
-library(data.table)
-library(psych)
-library(formattable)
+library(knitr) #done
 
+library(grid)
 library(gridtext)
 library(gridExtra)
 
+library(psych) #done
+```
+
+```{r, tidy = TRUE, message=FALSE, echo=FALSE}
+#| label: tbl-table1
+#| tbl-cap: "A table showing example values of the cleaned data frame. Age is given in years, the graffiti, cladding, grounds and walkways subscores are out of 5 each, and longitude and latitude are in degrees. Each row is one observation representing a single building evaluation."
+#| 
 clean_df <- read_csv("data/clean_df.csv")
 
 clean_df <- clean_df %>% relocate(longitude, .after = walkways)
 clean_df <- clean_df %>% relocate(latitude, .after = longitude)
 
-head_table <- knitr::kable(head(clean_df))
+head_table <- kable(head(clean_df))
 head_table
 
 ```
+## 2.4 Analysis
+Exploratory analysis was performed through data visualization. @psych was used for producing simple statistical tests. @knitr was used for producing tables. @ggmap was used for creating the Toronto map and plotting over it. @gridtext and @gridExtra were used for stylizing plots. A line plot was also made to visualize subscores across building age.
+
 # 3 Results
+The features of apartment buildings across the city are summarized in @tbl-table2. Please note that coordinates are only rounded for display and calculations were passed on the full numbers. Below, in @fig-figure1, see the geography of the location of this analysis, Toronto, Ontario. For reference, the window included in @fig-figure1 is the same as in all further map plots in this paper. 
 
 ```{r, tidy = TRUE, tidy.opts=list(width.cutoff=60), message=FALSE, echo=FALSE, results='hide'}
 
 round(colMeans(clean_df), 1)
 
+
 stats_table <- describe(clean_df) 
 
 keeps <- c("mean","sd")
 stats_table <- data.frame(t(round(stats_table[keeps], 1)))
+
+
 ```
 
 
 
 ```{r, tidy = TRUE, tidy.opts=list(width.cutoff=60), message=FALSE, echo=FALSE}
+#| label: tbl-table2
+#| tbl-cap: "Mean and standard deviation of table columns."
 knitr::kable(stats_table)
 
             
 ```
 
-```{r, tidy = TRUE, tidy.opts=list(width.cutoff=60), message=FALSE, echo=FALSE}
+
+```{r, tidy = TRUE, message=FALSE, echo=FALSE, out.width="80%"}
+#| label: fig-figure1
+#| fig-cap: "Map of Toronto, Ontario on longitude and latitude coordinates. The included window is rounded to the next 5 hundredths of a degree of the extreme-most values of observation."
+
 
 #graphing on the map 
 bbox <- c(left = -79.65, bottom = 43.55, right = -79.1, top = 43.85)
 toronto_map <- get_stamenmap(bbox, 
                              zoom = 10, 
-                             maptype = "terrain")
+                             maptype = "terrain") 
+
+ggmap(toronto_map) +
+  labs(title = "Map of Toronto, Ontario") +
+  theme(
+    plot.title = element_text(face="bold", size=16, hjust=0.5)
+  )
+
 # Map tiles by Stamen Design, under CC BY 3.0. Data by OpenStreetMap, under ODbL.
-
-ggmap(toronto_map)
-ggmap(
-  toronto_map,
-  extent = "normal",
-  maprange = FALSE) +
-  geom_point(
-    data = clean_df,
-    aes(
-      x = longitude,
-      y = latitude,
-      colour = storeys
-    ),
-    size = 1,
-    alpha = 0.5
-  ) +
-  scale_colour_gradientn(colours=rainbow(4)) +
-  labs(
-    x = "Longitude",
-    y = "Latitude",
-    colour = "Height (storeys)"
-  ) +
-  theme_minimal() +
-  theme(
-    panel.grid.major = element_blank(),
-    panel.grid.minor = element_blank(),
-  ) 
-
-ggmap(
-  toronto_map,
-  extent = "normal",
-  maprange = FALSE) +
-  geom_point(
-    data = clean_df,
-    aes(
-      x = longitude,
-      y = latitude,
-      colour = age
-    ),
-    size = 1,
-    alpha = 0.5
-  ) +
-  scale_colour_gradientn(colours=rainbow(4)) +
-  labs(
-    x = "Longitude",
-    y = "Latitude",
-    colour = "Age (years)"
-  ) +
-  theme_minimal() +
-  theme(
-    panel.grid.major = element_blank(),
-    panel.grid.minor = element_blank(),
-  ) 
-
-
 ```
+To address my principal question (i.e. how does upkeep of apartment buildings vary spatially in Toronto), @fig-figure2 shows a grid of colour coded maps to show the distribution of buildings and each of the four subscores selected. This style of data representation offers a high-level view (literally), of the density of scores in an area. @fig-figure2 shows that all subscores are near their peak of 5 in Northeast Toronto. With the exception of graffiti, all subscores decrease toward Southwest Toronto, and graffiti remains close to peak subscore through all of Toronto. 
 
+Plotting buildings and colour-coding by age in @fig-figure3 revealed an approximately consistent distribution across Toronto, with ages near the mean (61.4) with an absolute range of approximately 50 years being typical. South Toronto along the waterfront appears to be the most densely populated with new builds. 
 
+@fig-figure4 shows the mean subscores of buildings at all ages. Graffiti remains the highest subscore at nearly all ages. A downward trend is observable in cladding, grounds and walkways before rising slightly and approximately flatlining. All subscores experience their lowest mean values for buildings between 100 and 150 years of age. 
 
-```{r, tidy = TRUE, tidy.opts=list(width.cutoff=60), message=FALSE, echo=FALSE}
+```{r, tidy = TRUE, tidy.opts=list(width.cutoff=60), message=FALSE, echo=FALSE, out.width="100%"}
+#| label: fig-figure2
+#| fig-cap: "Toronto maps with superimposed locations of apartment buildings, colour-coded based on subscore."
+
 p1 <- ggmap(
   toronto_map,
   extent = "normal",
@@ -173,6 +158,7 @@ p1 <- ggmap(
     panel.grid.major = element_blank(),
     panel.grid.minor = element_blank(),
     axis.text.x = element_blank(),
+    axis.text.y = element_blank(),
     axis.ticks = element_blank(),
     rect = element_blank()
   ) 
@@ -231,6 +217,10 @@ p3 <- ggmap(
   theme(
     panel.grid.major = element_blank(),
     panel.grid.minor = element_blank(),
+    axis.text.x = element_blank(),
+    axis.text.y = element_blank(),
+    axis.ticks = element_blank(),
+    rect = element_blank()
   ) 
 
 p4 <- ggmap(
@@ -257,6 +247,7 @@ p4 <- ggmap(
   theme(
     panel.grid.major = element_blank(),
     panel.grid.minor = element_blank(),
+    axis.text.x = element_blank(),
     axis.text.y = element_blank(),
     axis.ticks = element_blank(),
     rect = element_blank()
@@ -264,15 +255,51 @@ p4 <- ggmap(
 
 p = list(p1,p2,p3,p4)
 
-yleft = richtext_grob('<span style="color:red">Latitude</span>', rot=90)
-bottom = richtext_grob(
-  text = '<span style="color:red">Longitude</span>')
-  
-grid.arrange(grobs=p, ncol = 2, nrow = 2, left = yleft, bottom = bottom)
+grid.arrange(grobs=p, ncol = 2, nrow = 2, padding = unit(0.5, "line"), top=textGrob(expression(bold("External Building Upkeep Across Toronto, by Subscore"))))
 
 ```
 
-```{r, tidy = TRUE, tidy.opts=list(width.cutoff=60), message=FALSE, echo=FALSE}
+```{r, tidy = TRUE, message=FALSE, echo=FALSE, results = 'hide', out.width="100%"}
+#| label: fig-figure3
+#| fig-cap: "Toronto map with superimposed locations of apartment buildings, colour-coded by age in years."
+ggmap(
+  toronto_map,
+  extent = "normal",
+  maprange = FALSE) +
+  geom_point(
+    data = clean_df,
+    aes(
+      x = longitude,
+      y = latitude,
+      colour = age
+    ),
+    size = 1,
+    alpha = 0.5
+  ) +
+  scale_colour_gradientn(colours=rainbow(4)) +
+  labs(
+    title="Plot of Building Age Distribution in Toronto",
+    x = "lon",
+    y = "lat",
+    colour = "Age (years)  "
+  ) +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(size=12, face="bold"),
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(),
+  ) 
+
+
+```
+
+
+
+
+
+```{r, tidy = TRUE, tidy.opts=list(width.cutoff=60), message=FALSE, echo=FALSE, out.width="95%"}
+#| label: fig-figure4
+#| fig-cap: "Mean subscores for apartment building upkeep plotted as functions of age, in years. Lines are plotted for each subscore of exterior building upkeep."
 graffiti_age <- clean_df %>% group_by(age) %>% 
      summarise(mean_graffiti=mean(graffiti),
                .groups = 'drop')
@@ -292,21 +319,46 @@ walkways_age <- clean_df %>% group_by(age) %>%
 age <- graffiti_age$age
 
 #plot the first data series using plot()
-plot(age, graffiti_age$mean_graffiti, col="blue", pch="o", ylab="subscore", lty=1, ylim=c(1.5,5))
+plot(age, graffiti_age$mean_graffiti, col="blue", type="n", main = "Mean Upkeep Subscore Across Building Age",ylab="subscore", xlab="age (years)", lty=1, ylim=c(1.5,5))
 lines(age, graffiti_age$mean_graffiti, col="blue",  lty=1)
 
 #add second data series to the same chart using points() and lines()
-points(age, cladding_age$mean_cladding, col="red", pch="*")
+#points(age, cladding_age$mean_cladding, col="red", pch="*")
 lines(age, cladding_age$mean_cladding, col="red",  lty=2)
 
 #add third data series to the same chart using points() and lines()
-points(age, grounds_age$mean_grounds, col="black", pch="+")
+#points(age, grounds_age$mean_grounds, col="black", pch="+")
 lines(age, grounds_age$mean_grounds, col="black", pch="+", lty=3)
 
 #add fourth data series to the same chart using points() and lines()
-points(age, walkways_age$mean_walkways, col="dark green", pch="x")
+#points(age, walkways_age$mean_walkways, col="dark green", pch="x")
 lines(age, walkways_age$mean_walkways, col="dark green", pch="x", lty=4)
 
 #add a legend in top left corner of chart at (x, y) coordinates = (150, 2.8)
-legend(150,2.8,legend=c("graffiti","cladding","grounds","walkways"), col=c("blue","red","black", "dark green"),lty=c(1,2,3,4), ncol=1)
+legend(160,2.8,c("graffiti","cladding","grounds","walkways"),cex=0.6, col=c("blue","red","black", "dark green"),lty=c(1,2,3,4), ncol=1)
 ```
+# 4 Discussion
+## 4.1 Findings
+Subscores other than for graffiti experience a common shared spatial trend, which might suggest a positive relationship between longitude and latitude with cladding, grounds and walkways. Graffiti subscores were high throughout the city compared with others (ranging typically from 4-5), representing the highest mean subscore at 4.4 (cladding, grounds and walkways were 3.2, 3.2 and 3.3, respectively). Reasons for these spatial trends might be due to a concentration of affluence to the Northeast or due to differential cultural densities throughout the city (these factors are likely to be related to each other). As previously mentioned, biases in collection might have resulted in this data being skewed if inspectors held judgements about parts of the city. Future research might look into these potential factors. 
+
+When mean subscores were plotted against building age, all hit troughs between 100 and 150 years. To speculate, a reason for this might have been because painting on a building that appears to be particularly new or old might be seen as high risk or undesirable to artists. 
+
+Finally, the visualization of subscores across age was flawed in that building age was concentrated near the mean. As a result, mean subscores at younger and older values were calculated using smaller samples, making them more prone to being skewed by extreme cases. 
+
+## 4.2 Limitations
+Several limitations exist in this analysis. Due to the nature of the dataset used, certain types of apartment buildings were not represented based on RentSafeTO’s guidelines; only apartments meeting the unit or storey criteria of RentSafeTO were included. Thus, a multi-apartment complex made up of small buildings might not be included. Some landlords might see this as a loophole, and not being held to municipal standards might mean that these buildings are of inferior quality due to lack of upkeep. 
+
+Another limitation was due to my chosen method of representing apartments by scatterplot. Over 3000 points were plotted over each map with visible overlap occurring. To mitigate overlooking these covered observations, I increased the transparency of points and decreased their size, however more representative methods likely exist and should be attempted in the future. 
+
+
+## 4.3 Future Research
+Returning to the initial claim that Toronto’s city layout is utilitarian, this exploration made me curious about the distribution of qualities in cities with more intentional urban layouts, for example in densely populated European countries. Future research might compare distributions between cities, and might examine them over time to view the trajectories of urban upkeep.  
+
+By taking the mean subscores across wards, a more readable map could be made as there would not be any overlap between polygons. In addition, viewing subscores by ward would create opportunities to explore political factors in scoring, both due to bias in evaluation (e.g. sentiments that certain groups prioritize upkeep over others) and values of these populations. 
+
+The evaluation year column in the set was null, however the evaluation date column remained intact. Future research might use the date of evaluation to observe how scores and subscores change over time. Due to the inclusion of RSN, repeat evaluations of individual buildings could be compared with one another to see if there are “good” and “bad” years for evaluation results, and could explore other features of buildings in relation to these scores. 
+
+\newpage
+
+# 5 References
+

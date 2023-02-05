@@ -1,4 +1,6 @@
 library(opendatatoronto)
+library(dplyr)
+library(readr)
 
 # get package
 package <- show_package("4ef82789-e038-44ef-a478-a8f3590c3eb1")
